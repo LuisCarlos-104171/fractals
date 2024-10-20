@@ -25,6 +25,12 @@
         lSystem.draw();
     }
 
+    function windowResized() {
+        resizeCanvas(windowWidth * 0.8, windowHeight * 0.7);
+        translate(width / 2, 3 * height / 4);
+        lSystem.draw();
+    }
+
     class LSystem {
         constructor(generations) {
             this.generations = generations;
