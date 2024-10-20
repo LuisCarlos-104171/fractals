@@ -1,18 +1,24 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="h-full">
 <head>
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Advanced Animated L-System in P5.js</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+    <title>Lifelike L-System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.11.0/p5.js"></script>
 </head>
-<body>
+<body class="h-full bg-gray-100 flex flex-col items-center justify-center">
+<div class="text-center mb-4">
+    <h1 class="text-3xl font-bold text-gray-800 mb-2">Lifelike L-System</h1>
+    <p class="text-gray-600">Using P5.js and Tailwind CSS</p>
+</div>
+<div id="canvas-container" class="bg-white rounded-lg shadow-lg p-4"></div>
 <script>
     let lSystem;
-    let frameCount = 0;
 
     function setup() {
-        createCanvas(windowWidth, windowHeight);
+        let canvas = createCanvas(windowWidth * 0.8, windowHeight * 0.7);
+        canvas.parent('canvas-container');
         angleMode(DEGREES);
         lSystem = new LSystem(13); // 4 generations
         translate(width / 2, 3 * height / 4);
@@ -74,7 +80,7 @@
         }
 
         draw() {
-            stroke(0, 100, 0);
+            stroke(34, 197, 94); // Tailwind green-500
             this.executeCommands(this.commands);
         }
 
