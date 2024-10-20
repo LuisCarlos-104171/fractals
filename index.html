@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Advanced Animated L-System in P5.js</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+</head>
+<body>
+<script>
+    let lSystem;
+    let frameCount = 0;
+
+    function setup() {
+        createCanvas(windowWidth, windowHeight);
+        angleMode(DEGREES);
+        lSystem = new LSystem(13); // 4 generations
+        translate(width / 2, 3 * height / 4);
+        lSystem.draw();
+    }
+
+    class LSystem {
+        constructor(generations) {
+            this.generations = generations;
+            this.generate();
+        }
+
+        generate() {
+            this.commands = this.L(0);
+        }
+
+        L(g) {
+            if (g >= this.generations) return [];
+            return [
+                {
+                    cmd: "fwd",
+                    params: [
+                        () =>
+                            random(
+                                100 / (g * g + 1) - 10,
+                                100 / (g * g + 1) + 10,
+                            ),
+                        5 / (g + 1),
+                        5 / (g + 2),
+                    ],
+                },
+                {
+                    cmd: "rot",
+                    params: [
+                        () => (3 / (g + 1)),
+                    ],
+                },
+                {cmd: "push"},
+                {cmd: "rot", params: [() => random(-35, -15)]},
+                ...this.L(g + 1),
+                {cmd: "pop"},
+                {
+                    cmd: "rot",
+                    params: [
+                        () => (3 / (g + 1)),
+                    ],
+                },
+                {cmd: "push"},
+                {cmd: "rot", params: [() => random(15, 35)]},
+                ...this.L(g + 1),
+                {cmd: "pop"},
+                {
+                    cmd: "rot",
+                    params: [
+                        () => (-3 / (g + 1)),
+                    ],
+                },
+            ];
+        }
+
+        draw() {
+            stroke(0, 100, 0);
+            this.executeCommands(this.commands);
+        }
+
+        executeCommands(commands) {
+            for (let cmd of commands) {
+                switch (cmd.cmd) {
+                    case "fwd":
+                        let len = cmd.params[0]();
+                        let startThickness = cmd.params[1];
+                        let endThickness = cmd.params[2];
+                        this.drawTaperedLine(len, startThickness, endThickness);
+                        break;
+                    case "rot":
+                        rotate(cmd.params[0]());
+                        break;
+                    case "push":
+                        push();
+                        break;
+                    case "pop":
+                        pop();
+                        break;
+                }
+            }
+        }
+
+        drawTaperedLine(len, startThickness, endThickness) {
+            let segments = 10;
+            let segmentLength = len / segments;
+            for (let i = 0; i < segments; i++) {
+                let t = i / (segments - 1);
+                let thickness = startThickness * (1 - t) + endThickness * t;
+                strokeWeight(thickness);
+                line(0, 0, 0, -segmentLength);
+                translate(0, -segmentLength);
+            }
+        }
+    }
+</script>
+</body>
+</html>
