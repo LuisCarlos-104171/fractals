@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mountain Range Generator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.11.0/p5.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 font-sans">
+<div id="sketch-container" class="flex justify-center items-center h-screen">
+    <div id="control" class="absolute top-4 left-4 bg-white bg-opacity-80 p-4 rounded-lg shadow-md">
+        <h2 class="text-xl font-bold mb-4 text-gray-800">Mountain Range Controls</h2>
+        <div class="space-y-4">
+            <div>
+                <label for="subdivisionSlider" class="block text-sm font-medium text-gray-700 mb-1">Subdivisions: <span id="subdivisionValue" class="font-bold">5</span></label>
+                <input type="range" id="subdivisionSlider" min="1" max="8" value="5" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+            </div>
+            <div>
+                <label for="offsetSlider" class="block text-sm font-medium text-gray-700 mb-1">Random Offset: <span id="offsetValue" class="font-bold">100</span></label>
+                <input type="range" id="offsetSlider" min="0" max="200" value="100" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+            </div>
+            <div class="flex items-center">
+                <input type="checkbox" id="shadingCheckbox" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                <label for="shadingCheckbox" class="ml-2 block text-sm text-gray-700">Shading</label>
+            </div>
+            <div class="text-left">
+                <p class="text-sm text-gray-600">
+                    Number of vertices: <span id="verticesCount" class="font-bold">0</span>
+                </p>
+            </div>
+            <div class="text-left">
+                <p class="text-sm text-gray-600">Move mouse to rotate, scroll to zoom</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let terrain = [];
+    let cols, rows;
+    let scl = 500;
+
+    let subdivisionSlider, offsetSlider, shadingCheckbox;
+    let subdivisionValue, offsetValue;
+    let controlElement, controlElementMouseOver;
+    let verticesCount;
+
+    function setup() {
+        let canvas = createCanvas(windowWidth, windowHeight, WEBGL);
+        canvas.parent('sketch-container');
+
+        subdivisionSlider = select('#subdivisionSlider');
+        offsetSlider = select('#offsetSlider');
+        shadingCheckbox = select('#shadingCheckbox');
+        subdivisionValue = select('#subdivisionValue');
+        offsetValue = select('#offsetValue');
+        verticesCount = select('#verticesCount');
+        controlElement = select('#control');
+
+        subdivisionSlider.input(updateSliders);
+        offsetSlider.input(updateSliders);
+        controlElement.mouseOver(() => controlElementMouseOver = true);
+        controlElement.mouseOut(() => controlElementMouseOver = false);
+        shadingCheckbox.changed(redraw);
+
+        updateSliders();
+    }
+
+    function updateSliders() {
+        subdivisionValue.html(subdivisionSlider.value());
+        offsetValue.html(offsetSlider.value());
+        generateTerrain();
+        verticesCount.html(cols * rows);
+    }
+
+    function windowResized() {
+        resizeCanvas(windowWidth, windowHeight);
+    }
+
+    function draw() {
+        background(0);
+
+        if (!controlElementMouseOver)
+            orbitControl();
+
+        if (shadingCheckbox.checked()) {
+            noStroke();
+        } else {
+            stroke(255);
+            noFill();
+        }
+
+        // Center the terrain
+        translate(-scl/2, 0, -scl/2);
+
+        for (let y = 0; y < rows - 1; y++) {
+            beginShape(TRIANGLE_STRIP);
+            for (let x = 0; x < cols; x++) {
+                if (shadingCheckbox.checked()) {
+                    let shade = map(terrain[x][y], -100, 100, 255, 0);
+                    fill(shade);
+                }
+                vertex(x * scl / cols, terrain[x][y], y * scl / rows);
+
+                if (shadingCheckbox.checked()) {
+                    let shade = map(terrain[x][y+1], -100, 100, 255, 0);
+                    fill(shade);
+                }
+                vertex(x * scl / cols, terrain[x][y + 1], (y + 1) * scl / rows);
+            }
+            endShape();
+        }
+    }
+
+    function generateTerrain() {
+        let subdivisions = parseInt(subdivisionSlider.value());
+        let maxOffset = parseFloat(offsetSlider.value());
+
+        cols = Math.pow(2, subdivisions) + 1;
+        rows = cols;
+
+        terrain = [];
+        for (let x = 0; x < cols; x++) {
+            terrain[x] = new Array(rows).fill(0);
+        }
+
+        // Set corner points
+        terrain[0][0] = random(-maxOffset, maxOffset);
+        terrain[cols-1][0] = random(-maxOffset, maxOffset);
+        terrain[0][rows-1] = random(-maxOffset, maxOffset);
+        terrain[cols-1][rows-1] = random(-maxOffset, maxOffset);
+
+        let size = cols - 1;
+        let offset = maxOffset;
+
+        while (size > 1) {
+            let half = size / 2;
+
+            // Midpoint displacement
+            for (let y = 0; y < rows - 1; y += size) {
+                for (let x = 0; x < cols - 1; x += size) {
+                    let midX = x + half;
+                    let midY = y + half;
+
+                    // Calculate middle point
+                    terrain[midX][midY] = (
+                        terrain[x][y] +
+                        terrain[x+size][y] +
+                        terrain[x][y+size] +
+                        terrain[x+size][y+size]
+                    ) / 4 + random(-offset, offset);
+
+                    // Calculate edge midpoints
+                    terrain[midX][y] = (terrain[x][y] + terrain[x+size][y]) / 2 + random(-offset, offset);
+                    terrain[midX][y+size] = (terrain[x][y+size] + terrain[x+size][y+size]) / 2 + random(-offset, offset);
+                    terrain[x][midY] = (terrain[x][y] + terrain[x][y+size]) / 2 + random(-offset, offset);
+                    terrain[x+size][midY] = (terrain[x+size][y] + terrain[x+size][y+size]) / 2 + random(-offset, offset);
+                }
+            }
+
+            size = half;
+            offset *= 0.5;
+        }
+
+        // Normalize terrain
+        let min = Infinity;
+        let max = -Infinity;
+        for (let x = 0; x < cols; x++) {
+            for (let y = 0; y < rows; y++) {
+                if (terrain[x][y] < min) min = terrain[x][y];
+                if (terrain[x][y] > max) max = terrain[x][y];
+            }
+        }
+        for (let x = 0; x < cols; x++) {
+            for (let y = 0; y < rows; y++) {
+                terrain[x][y] = map(terrain[x][y], min, max, -100, 100);
+            }
+        }
+    }
+</script>
+</body>
+</html>

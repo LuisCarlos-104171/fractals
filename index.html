@@ -1,123 +1,39 @@
-<!doctype html>
-<html lang="en" class="h-full">
+<!DOCTYPE html>
+<html lang="en">
 <head>
-    <meta charset="UTF-8"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Lifelike L-System</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>L-Systems and Mountains</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.11.0/p5.js"></script>
 </head>
-<body class="h-full bg-gray-100 flex flex-col items-center justify-center">
-<div class="text-center mb-4">
-    <h1 class="text-3xl font-bold text-gray-800 mb-2">Lifelike L-System</h1>
-    <p class="text-gray-600">Using P5.js and Tailwind CSS</p>
-</div>
-<div id="canvas-container" class="bg-white rounded-lg shadow-lg p-4"></div>
-<script>
-    let lSystem;
+<body class="bg-gradient-to-b from-green-100 to-blue-200 min-h-screen flex flex-col p-20">
+<header class="text-center py-12">
+    <h1 class="text-5xl font-bold text-gray-800 mb-4">L-Systems and Mountains</h1>
+    <p class="text-xl text-gray-600">Explore the beauty of nature through algorithms</p>
+</header>
 
-    function setup() {
-        let canvas = createCanvas(windowWidth * 0.8, windowHeight * 0.7);
-        canvas.parent('canvas-container');
-        angleMode(DEGREES);
-        lSystem = new LSystem(13); // 4 generations
-        translate(width / 2, 3 * height / 4);
-        lSystem.draw();
-    }
+<main class="flex-grow container mx-auto px-4 flex flex-col md:flex-row justify-center items-stretch gap-8">
+    <div class="bg-white rounded-lg shadow-lg p-6 w-full md:w-1/2 max-w-md flex flex-col justify-between">
+        <div>
+            <h2 class="text-3xl font-bold text-gray-800 mb-4">Lifelike L-System</h2>
+            <p class="text-gray-600 mb-6">Generate fascinating fractal patterns using L-Systems and P5.js.</p>
+        </div>
+        <a href="l-systems"
+           class="block w-full bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded text-center transition duration-300 mt-auto">
+            Explore L-Systems
+        </a>
+    </div>
 
-    class LSystem {
-        constructor(generations) {
-            this.generations = generations;
-            this.generate();
-        }
-
-        generate() {
-            this.commands = this.L(0);
-        }
-
-        L(g) {
-            if (g >= this.generations) return [];
-            return [
-                {
-                    cmd: "fwd",
-                    params: [
-                        () =>
-                            random(
-                                100 / (g * g + 1) - 10,
-                                100 / (g * g + 1) + 10,
-                            ),
-                        5 / (g + 1),
-                        5 / (g + 2),
-                    ],
-                },
-                {
-                    cmd: "rot",
-                    params: [
-                        () => (3 / (g + 1)),
-                    ],
-                },
-                {cmd: "push"},
-                {cmd: "rot", params: [() => random(-35, -15)]},
-                ...this.L(g + 1),
-                {cmd: "pop"},
-                {
-                    cmd: "rot",
-                    params: [
-                        () => (3 / (g + 1)),
-                    ],
-                },
-                {cmd: "push"},
-                {cmd: "rot", params: [() => random(15, 35)]},
-                ...this.L(g + 1),
-                {cmd: "pop"},
-                {
-                    cmd: "rot",
-                    params: [
-                        () => (-3 / (g + 1)),
-                    ],
-                },
-            ];
-        }
-
-        draw() {
-            stroke(34, 197, 94); // Tailwind green-500
-            this.executeCommands(this.commands);
-        }
-
-        executeCommands(commands) {
-            for (let cmd of commands) {
-                switch (cmd.cmd) {
-                    case "fwd":
-                        let len = cmd.params[0]();
-                        let startThickness = cmd.params[1];
-                        let endThickness = cmd.params[2];
-                        this.drawTaperedLine(len, startThickness, endThickness);
-                        break;
-                    case "rot":
-                        rotate(cmd.params[0]());
-                        break;
-                    case "push":
-                        push();
-                        break;
-                    case "pop":
-                        pop();
-                        break;
-                }
-            }
-        }
-
-        drawTaperedLine(len, startThickness, endThickness) {
-            let segments = 10;
-            let segmentLength = len / segments;
-            for (let i = 0; i < segments; i++) {
-                let t = i / (segments - 1);
-                let thickness = startThickness * (1 - t) + endThickness * t;
-                strokeWeight(thickness);
-                line(0, 0, 0, -segmentLength);
-                translate(0, -segmentLength);
-            }
-        }
-    }
-</script>
+    <div class="bg-white rounded-lg shadow-lg p-6 w-full md:w-1/2 max-w-md flex flex-col justify-between">
+        <div>
+            <h2 class="text-3xl font-bold text-gray-800 mb-4">Mountain Range Generator</h2>
+            <p class="text-gray-600 mb-6">Create stunning procedural mountain ranges with customizable parameters.</p>
+        </div>
+        <a href="mountains"
+           class="block w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded text-center transition duration-300 mt-auto">
+            Generate Mountains
+        </a>
+    </div>
+</main>
 </body>
 </html>
