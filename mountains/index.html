@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mountain Range Generator</title>
+    <title>Mountain Range Generator - Diamond Square</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.11.0/p5.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
@@ -13,12 +13,23 @@
         <h2 class="text-xl font-bold mb-4 text-gray-800">Mountain Range Controls</h2>
         <div class="space-y-4">
             <div>
+                <label for="seedInput" class="block text-sm font-medium text-gray-700 mb-1">Seed:</label>
+                <div class="flex space-x-2">
+                    <input type="number" id="seedInput" value="12345"
+                           class="w-32 px-2 py-1 border rounded text-sm">
+                    <button id="randomSeedBtn"
+                            class="bg-gray-500 text-white px-2 py-1 rounded text-sm hover:bg-gray-600 transition-colors">
+                        Random
+                    </button>
+                </div>
+            </div>
+            <div>
                 <label for="subdivisionSlider" class="block text-sm font-medium text-gray-700 mb-1">Subdivisions: <span id="subdivisionValue" class="font-bold">5</span></label>
                 <input type="range" id="subdivisionSlider" min="1" max="8" value="5" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
             </div>
             <div>
-                <label for="offsetSlider" class="block text-sm font-medium text-gray-700 mb-1">Random Offset: <span id="offsetValue" class="font-bold">100</span></label>
-                <input type="range" id="offsetSlider" min="0" max="200" value="100" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                <label for="roughnessSlider" class="block text-sm font-medium text-gray-700 mb-1">Roughness: <span id="roughnessValue" class="font-bold">0.5</span></label>
+                <input type="range" id="roughnessSlider" min="0" max="100" value="50" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
             </div>
             <div class="flex items-center">
                 <input type="checkbox" id="shadingCheckbox" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
@@ -32,6 +43,9 @@
             <div class="text-left">
                 <p class="text-sm text-gray-600">Move mouse to rotate, scroll to zoom</p>
             </div>
+            <button id="regenerateBtn" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors">
+                Regenerate Terrain
+            </button>
         </div>
     </div>
 </div>
@@ -40,36 +54,66 @@
     let terrain = [];
     let cols, rows;
     let scl = 500;
+    let currentSeed;
+    let rng;
 
-    let subdivisionSlider, offsetSlider, shadingCheckbox;
-    let subdivisionValue, offsetValue;
+    let subdivisionSlider, roughnessSlider, shadingCheckbox, seedInput;
+    let subdivisionValue, roughnessValue;
     let controlElement, controlElementMouseOver;
     let verticesCount;
+
+    // Seeded random number generator
+    class RandomGenerator {
+        constructor(seed) {
+            this.seed = seed;
+        }
+
+        // Simple random number generator using a linear congruential generator
+        random() {
+            this.seed = (1664525 * this.seed + 1013904223) % 4294967296;
+            return this.seed / 4294967296;
+        }
+
+        // Get random number in range [min, max]
+        randomRange(min, max) {
+            return min + (max - min) * this.random();
+        }
+    }
 
     function setup() {
         let canvas = createCanvas(windowWidth, windowHeight, WEBGL);
         canvas.parent('sketch-container');
 
         subdivisionSlider = select('#subdivisionSlider');
-        offsetSlider = select('#offsetSlider');
+        roughnessSlider = select('#roughnessSlider');
         shadingCheckbox = select('#shadingCheckbox');
+        seedInput = select('#seedInput');
         subdivisionValue = select('#subdivisionValue');
-        offsetValue = select('#offsetValue');
+        roughnessValue = select('#roughnessValue');
         verticesCount = select('#verticesCount');
         controlElement = select('#control');
 
         subdivisionSlider.input(updateSliders);
-        offsetSlider.input(updateSliders);
+        roughnessSlider.input(updateSliders);
+        seedInput.input(updateSliders);
         controlElement.mouseOver(() => controlElementMouseOver = true);
         controlElement.mouseOut(() => controlElementMouseOver = false);
         shadingCheckbox.changed(redraw);
+
+        select('#regenerateBtn').mousePressed(generateTerrain);
+        select('#randomSeedBtn').mousePressed(() => {
+            seedInput.value(floor(random(1, 999999)));
+            updateSliders();
+        });
 
         updateSliders();
     }
 
     function updateSliders() {
         subdivisionValue.html(subdivisionSlider.value());
-        offsetValue.html(offsetSlider.value());
+        roughnessValue.html((roughnessSlider.value() / 100).toFixed(2));
+        currentSeed = parseInt(seedInput.value()) || 12345;
+        rng = new RandomGenerator(currentSeed);
         generateTerrain();
         verticesCount.html(cols * rows);
     }
@@ -115,63 +159,88 @@
 
     function generateTerrain() {
         let subdivisions = parseInt(subdivisionSlider.value());
-        let maxOffset = parseFloat(offsetSlider.value());
+        let roughness = parseFloat(roughnessSlider.value()) / 100;
 
         cols = Math.pow(2, subdivisions) + 1;
         rows = cols;
 
-        terrain = [];
-        for (let x = 0; x < cols; x++) {
-            terrain[x] = new Array(rows).fill(0);
-        }
+        // Initialize the terrain array
+        terrain = Array(cols).fill().map(() => Array(rows).fill(0));
 
-        // Set corner points
-        terrain[0][0] = random(-maxOffset, maxOffset);
-        terrain[cols-1][0] = random(-maxOffset, maxOffset);
-        terrain[0][rows-1] = random(-maxOffset, maxOffset);
-        terrain[cols-1][rows-1] = random(-maxOffset, maxOffset);
+        // Set initial corner points using seeded random
+        terrain[0][0] = rng.randomRange(-100, 100);
+        terrain[cols-1][0] = rng.randomRange(-100, 100);
+        terrain[0][rows-1] = rng.randomRange(-100, 100);
+        terrain[cols-1][rows-1] = rng.randomRange(-100, 100);
 
+        // Diamond-Square algorithm
         let size = cols - 1;
-        let offset = maxOffset;
+        let maxRange = 200; // Initial maximum displacement range
 
         while (size > 1) {
             let half = size / 2;
+            let scale = maxRange * roughness;
 
-            // Midpoint displacement
+            // Diamond step
             for (let y = 0; y < rows - 1; y += size) {
                 for (let x = 0; x < cols - 1; x += size) {
-                    let midX = x + half;
-                    let midY = y + half;
+                    diamondStep(x, y, size, scale);
+                }
+            }
 
-                    // Calculate middle point
-                    terrain[midX][midY] = (
-                        terrain[x][y] +
-                        terrain[x+size][y] +
-                        terrain[x][y+size] +
-                        terrain[x+size][y+size]
-                    ) / 4 + random(-offset, offset);
-
-                    // Calculate edge midpoints
-                    terrain[midX][y] = (terrain[x][y] + terrain[x+size][y]) / 2 + random(-offset, offset);
-                    terrain[midX][y+size] = (terrain[x][y+size] + terrain[x+size][y+size]) / 2 + random(-offset, offset);
-                    terrain[x][midY] = (terrain[x][y] + terrain[x][y+size]) / 2 + random(-offset, offset);
-                    terrain[x+size][midY] = (terrain[x+size][y] + terrain[x+size][y+size]) / 2 + random(-offset, offset);
+            // Square step
+            for (let y = 0; y < rows; y += half) {
+                for (let x = (y + half) % size; x < cols; x += size) {
+                    squareStep(x, y, half, scale);
                 }
             }
 
             size = half;
-            offset *= 0.5;
+            maxRange *= 0.5;
         }
 
         // Normalize terrain
+        normalizeTerain();
+    }
+
+    function diamondStep(x, y, size, scale) {
+        let half = size / 2;
+        let avg = (
+            terrain[x][y] + // top left
+            terrain[x + size][y] + // top right
+            terrain[x][y + size] + // bottom left
+            terrain[x + size][y + size] // bottom right
+        ) / 4;
+
+        terrain[x + half][y + half] = avg + rng.randomRange(-scale, scale);
+    }
+
+    function squareStep(x, y, size, scale) {
+        let count = 0;
+        let sum = 0;
+
+        // Check each adjacent point
+        if (x >= size) { sum += terrain[x - size][y]; count++; }
+        if (x + size < cols) { sum += terrain[x + size][y]; count++; }
+        if (y >= size) { sum += terrain[x][y - size]; count++; }
+        if (y + size < rows) { sum += terrain[x][y + size]; count++; }
+
+        terrain[x][y] = (sum / count) + rng.randomRange(-scale, scale);
+    }
+
+    function normalizeTerain() {
         let min = Infinity;
         let max = -Infinity;
+
+        // Find min and max values
         for (let x = 0; x < cols; x++) {
             for (let y = 0; y < rows; y++) {
-                if (terrain[x][y] < min) min = terrain[x][y];
-                if (terrain[x][y] > max) max = terrain[x][y];
+                min = Math.min(min, terrain[x][y]);
+                max = Math.max(max, terrain[x][y]);
             }
         }
+
+        // Normalize to range [-100, 100]
         for (let x = 0; x < cols; x++) {
             for (let y = 0; y < rows; y++) {
                 terrain[x][y] = map(terrain[x][y], min, max, -100, 100);
