@@ -97,7 +97,6 @@
         controlElement.mouseOut(() => controlElementMouseOver = false);
         shadingCheckbox.changed(redraw);
 
-        select('#regenerateBtn').mousePressed(generateTerrain);
         select('#randomSeedBtn').mousePressed(() => {
             seedInput.value(floor(random(1, 999999)));
             updateSliders();
